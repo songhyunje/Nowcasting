@@ -1,0 +1,4 @@
+data/train/*
+data/valid/*
+data/test/*
+output
