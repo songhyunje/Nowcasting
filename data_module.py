@@ -10,9 +10,12 @@ class NowCastingDataModule(pl.LightningDataModule):
         self.data_dir = data_dir
         self.batch_size = batch_size
 
-    # def prepare_data(self):
-    #     # Download, tokenize, etc
-    #     # Write to disk or that need to be done only from a single GPU in distributed settings
+    def prepare_data(self):
+        # Download, tokenize, etc
+        # Write to disk or that need to be done only from a single GPU in distributed settings
+        NowCastingDataset(self.data_dir, data_type='train', prepare=True)
+        NowCastingDataset(self.data_dir, data_type='valid', prepare=True)
+        NowCastingDataset(self.data_dir, data_type='test', prepare=True)
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
@@ -23,17 +26,18 @@ class NowCastingDataModule(pl.LightningDataModule):
             self.test = NowCastingDataset(self.data_dir, data_type='test')
 
     def train_dataloader(self):
-        return DataLoader(self.train, batch_size=self.batch_size, shuffle=True, num_workers=4)
+        return DataLoader(self.train, batch_size=self.batch_size, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.valid, batch_size=self.batch_size, num_workers=4)
+        return DataLoader(self.valid, batch_size=self.batch_size)
 
     def test_dataloader(self):
-        return DataLoader(self.test, batch_size=self.batch_size, num_workers=4)
+        return DataLoader(self.test, batch_size=self.batch_size)
 
 
 if __name__ == "__main__":
     data_module = NowCastingDataModule()
+    data_module.prepare_data()
     data_module.setup('fit')
     for batch in data_module.train_dataloader():
         print(batch[0].size())

@@ -61,10 +61,9 @@ python trainer.py --data_dir data
 
 ## TODO (in progress)
 - Modify kernel size 
-- Process -9999 value
 - Add some layers for the prediction
 - ...
 
 ## Acknowledgement
-The ConvLSTM implementation is inspired from [ConvLSTM](https://github.com/ndrplz/ConvLSTM_pytorch).
+The ConvLSTM implementation is inspired from [ConvLSTM_pytorch](https://github.com/ndrplz/ConvLSTM_pytorch).
 
