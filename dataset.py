@@ -1,3 +1,4 @@
+import copy
 import os
 from pathlib import Path
 
@@ -91,7 +92,8 @@ class NowCastingPredctionDataset(Dataset):
         item = torch.stack(data)
 
         seqs, target = item[:-1], item[-1]
-        mask = seqs[:-1].lt(0)
+        mask = copy.deepcopy(seqs[-1])
+        mask[mask > 0] = 0
 
         seqs[seqs < 0] = 0
         if self.transform:

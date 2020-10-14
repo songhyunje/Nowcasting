@@ -25,13 +25,13 @@ def prediction(args):
 
     with torch.no_grad():
         for data in prediction_dataloader:
-            fn, seqs, mask = data['fn'], data['seqs'], mask
+            fn, seqs, mask = data['fn'], data['seqs'], data['mask']
             seqs = seqs.to(device)
             mask = mask.to(device)
             # target = data['target'].to(device)
             # target = target.to(device)
             pred = model.infer(seqs)
-            pred = torch.where(mask, seqs[-1], pred)
+            pred = torch.where(mask < 0, mask, pred)
 
             path = Path(args.output_dir + '/' + fn[0].replace('/', '_'))
             np.save(path, pred[0].cpu().numpy())
