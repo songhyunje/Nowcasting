@@ -1,5 +1,5 @@
-from pathlib import Path
 import os
+from pathlib import Path
 
 import netCDF4 as nc
 import torch
@@ -9,16 +9,17 @@ from torch.utils.data import Dataset
 
 class NowCastingDataset(Dataset):
     def __init__(self, data_dir: str = './data', data_type: str = 'train',
-                 prepare=False, seq_len: int = 6):
+                 prepare=False, seq_len: int = 6, transform=None):
         super().__init__()
         self.data_dir = data_dir
         self.seq_len = seq_len
+        self.transform = transform
 
         if prepare:
             self.prepare(data_dir, data_type)
 
         tmp = torch.load(os.path.join(self.processed_folder, data_type))
-        self.data = [tmp[i:i+self.seq_len] for i in range(len(tmp)+1-self.seq_len)]
+        self.data = [tmp[i:i + self.seq_len] for i in range(len(tmp) + 1 - self.seq_len)]
 
     def prepare(self, data_dir, data_type):
         if self._check_exists(data_type):
@@ -45,10 +46,17 @@ class NowCastingDataset(Dataset):
 
     def __getitem__(self, index):
         item = torch.stack(self.data[index])
-        mask = item[-1].ge(0)
-        return item[:-1], item[-1], mask
-        # mask = item[1:].ge(0)
-        # return item[:-1], item[1:], mask
+
+        seqs, target = item[:-1], item[-1]
+        seqs[seqs < 0] = 0
+        target[target < 0] = 0
+
+        mask = target.ge(0)
+        if self.transform:
+            seqs = self.transform(seqs)
+            target = self.transform(target)
+
+        return seqs, target, mask
 
     @property
     def processed_folder(self):
@@ -59,8 +67,9 @@ class NowCastingDataset(Dataset):
 
 
 class NowCastingPredctionDataset(Dataset):
-    def __init__(self, data_dir: str = './data'):
+    def __init__(self, data_dir: str = './data', transform=None):
         super().__init__()
+        self.transform = transform
 
         self.data = []
         path = Path(data_dir)
@@ -80,7 +89,15 @@ class NowCastingPredctionDataset(Dataset):
     def __getitem__(self, index):
         fn, data = self.data[index]
         item = torch.stack(data)
-        return {'fn': str(fn), 'seqs': item[:-1], 'target': item[-1]}
+
+        seqs, target = item[:-1], item[-1]
+        mask = seqs[:-1].lt(0)
+
+        seqs[seqs < 0] = 0
+        if self.transform:
+            seqs = self.transform(seqs)
+
+        return {'fn': str(fn), 'seqs': seqs, 'target': target, 'mask': mask}
 
 
 if __name__ == "__main__":

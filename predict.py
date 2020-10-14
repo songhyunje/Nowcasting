@@ -25,16 +25,13 @@ def prediction(args):
 
     with torch.no_grad():
         for data in prediction_dataloader:
-            fn, seqs, target = data['fn'], data['seqs'], data['target']
+            fn, seqs, mask = data['fn'], data['seqs'], mask
             seqs = seqs.to(device)
-            target = target.to(device)
+            mask = mask.to(device)
+            # target = data['target'].to(device)
+            # target = target.to(device)
             pred = model.infer(seqs)
-
-            # We need some postprocessing like this
-            # But, this code is cheat!!!! because it utilizes the target
-            value_part = target.ge(0)
-            non_value_part = target.lt(0)
-            pred = pred * value_part + target * non_value_part
+            pred = torch.where(mask, seqs[-1], pred)
 
             path = Path(args.output_dir + '/' + fn[0].replace('/', '_'))
             np.save(path, pred[0].cpu().numpy())
