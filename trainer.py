@@ -30,7 +30,7 @@ def train(args):
     )
 
     pl.seed_everything(args.seed)
-    data_module = NowCastingDataModule(data_dir=args.data_dir, batch_size=2)
+    data_module = NowCastingDataModule(args)
 
     train_params = {}
     if args.gpus > 1:
@@ -46,10 +46,6 @@ def train(args):
 
     trainer.fit(model, data_module)
 
-    # trainer.test()
-    # if args.do_predict:
-    #     trainer.test()
-
 
 def add_generic_arguments(parser):
     parser.add_argument("--data_dir", default=None, type=str, required=True,
@@ -59,10 +55,8 @@ def add_generic_arguments(parser):
                         )
     parser.add_argument("--fast_dev_run", action="store_true")
     parser.add_argument("--gpus", type=int)
-    parser.add_argument("--gradient_clip_val", default=5.0, type=float, help="Gradient clipping value")
+    parser.add_argument("--gradient_clip_val", default=1.0, type=float, help="Gradient clipping value")
     parser.add_argument("--precision", default=32, type=int, help="Precision")
-    parser.add_argument("--do_train", action="store_true", help="Whether to run training.")
-    parser.add_argument("--do_predict", action="store_true", help="Whether to run predictions on the test set.")
     parser.add_argument("--accumulate_grad_batches", type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.",
                         )

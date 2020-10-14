@@ -1,14 +1,18 @@
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-
+import argparse
 from dataset import NowCastingDataset
 
 
 class NowCastingDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir: str = './data', batch_size=16):
+    def __init__(self, params):
         super().__init__()
-        self.data_dir = data_dir
-        self.batch_size = batch_size
+        self.data_dir = params.data_dir
+        self.train_batch_size = params.train_batch_size
+        self.valid_batch_size = params.valid_batch_size
+
+        if hasattr(params, 'test_batch_size'):
+            self.test_batch_size = params.test_batch_size
 
     def prepare_data(self):
         # Download, tokenize, etc
@@ -26,17 +30,22 @@ class NowCastingDataModule(pl.LightningDataModule):
             self.test = NowCastingDataset(self.data_dir, data_type='test')
 
     def train_dataloader(self):
-        return DataLoader(self.train, batch_size=self.batch_size, shuffle=True)
+        return DataLoader(self.train, batch_size=self.train_batch_size, shuffle=True, num_workers=4)
 
     def val_dataloader(self):
-        return DataLoader(self.valid, batch_size=self.batch_size)
+        return DataLoader(self.valid, batch_size=self.valid_batch_size, num_workers=4)
 
     def test_dataloader(self):
-        return DataLoader(self.test, batch_size=self.batch_size)
+        return DataLoader(self.test, batch_size=self.test_batch_size)
 
 
 if __name__ == "__main__":
-    data_module = NowCastingDataModule()
+    args = argparse.Namespace()
+    args.data_dir = 'data'
+    args.train_batch_size = 2
+    args.valid_batch_size = 2
+
+    data_module = NowCastingDataModule(args)
     data_module.prepare_data()
     data_module.setup('fit')
     for batch in data_module.train_dataloader():

@@ -19,7 +19,6 @@ class NowCastingDataset(Dataset):
 
         tmp = torch.load(os.path.join(self.processed_folder, data_type))
         self.data = [tmp[i:i+self.seq_len] for i in range(len(tmp)+1-self.seq_len)]
-        # self.data.append(torch.stack(tmp))
 
     def prepare(self, data_dir, data_type):
         if self._check_exists(data_type):
@@ -46,10 +45,10 @@ class NowCastingDataset(Dataset):
 
     def __getitem__(self, index):
         item = torch.stack(self.data[index])
-        # mask = self.data[index][-1].ge(0)
-        # return self.data[index][:-1], self.data[index][-1], mask
-        mask = item[1:].ge(0)
-        return item[:-1], item[1:], mask
+        mask = item[-1].ge(0)
+        return item[:-1], item[-1], mask
+        # mask = item[1:].ge(0)
+        # return item[:-1], item[1:], mask
 
     @property
     def processed_folder(self):
@@ -57,6 +56,31 @@ class NowCastingDataset(Dataset):
 
     def _check_exists(self, data_type):
         return os.path.exists(os.path.join(self.processed_folder, data_type))
+
+
+class NowCastingPredctionDataset(Dataset):
+    def __init__(self, data_dir: str = './data'):
+        super().__init__()
+
+        self.data = []
+        path = Path(data_dir)
+        for x in path.iterdir():
+            if x.is_dir():
+                files = sorted([f for f in x.iterdir() if f.is_file()])
+                tmp = []
+                for f in files:
+                    ds = nc.Dataset(f)
+                    value = ds.variables["data"][:]
+                    tmp.append(torch.tensor(value))
+                self.data.append((x, tmp))
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        fn, data = self.data[index]
+        item = torch.stack(data)
+        return {'fn': str(fn), 'seqs': item[:-1], 'target': item[-1]}
 
 
 if __name__ == "__main__":
