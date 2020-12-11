@@ -49,13 +49,18 @@ class NowCastingDataset(Dataset):
         item = torch.stack(self.data[index])
 
         seqs, target = item[:-1], item[-1]
+        mask = seqs[0] < 0
+
+        if self.transform:
+            seqs /= 250
+            target /= 250
+            # seqs = self.transform(seqs)
+            # target = self.transform(target)
+
+        # seqs[seqs < 0] = -1
+        # target[target < 0] = -1
         seqs[seqs < 0] = 0
         target[target < 0] = 0
-
-        mask = target.ge(0)
-        if self.transform:
-            seqs = self.transform(seqs)
-            target = self.transform(target)
 
         return seqs, target, mask
 
@@ -92,21 +97,28 @@ class NowCastingPredctionDataset(Dataset):
         item = torch.stack(data)
 
         seqs, target = item[:-1], item[-1]
-        mask = copy.deepcopy(seqs[-1])
-        mask[mask > 0] = 0
+        mask = seqs[0] < 0
+        # mask = copy.deepcopy(seqs[-1])
+        # mask[mask >= 0] = 0
+
+        if self.transform:
+            seqs /= 250
 
         seqs[seqs < 0] = 0
-        if self.transform:
-            seqs = self.transform(seqs)
 
         return {'fn': str(fn), 'seqs': seqs, 'target': target, 'mask': mask}
 
 
 if __name__ == "__main__":
     dataset = NowCastingDataset(data_type='train')
-    dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
+    dataloader = DataLoader(dataset, batch_size=512, shuffle=True)
     for d in dataloader:
         print(d[0].size())
         print(d[1].size())
-        print(d[2].size())
+        print(torch.sum(d[0][d[0] > 1].long()))
+        print(torch.max(d[0]))
+
+        c = d[0] / 300
+        print(torch.sum(c[c > 1].long()))
+        # print(torch.sum(pred[pred > 3].long()))
         break

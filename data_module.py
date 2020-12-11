@@ -23,8 +23,8 @@ class NowCastingDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         if stage == 'fit' or stage is None:
-            self.train = NowCastingDataset(self.data_dir, data_type='train')
-            self.valid = NowCastingDataset(self.data_dir, data_type='valid')
+            self.train = NowCastingDataset(self.data_dir, data_type='train', transform=True)
+            self.valid = NowCastingDataset(self.data_dir, data_type='valid', transform=True)
 
         if stage == 'test' or stage is None:
             self.test = NowCastingDataset(self.data_dir, data_type='test')

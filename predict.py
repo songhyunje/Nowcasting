@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 
 from dataset import NowCastingPredctionDataset
 from model import LightningModel
+import torch.nn.functional as F
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -15,7 +16,7 @@ def prediction(args):
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True)
 
-    prediction_dataset = NowCastingPredctionDataset(args.data_dir)
+    prediction_dataset = NowCastingPredctionDataset(args.data_dir, transform=True)
     # collate_fn is needed if you want to put batch_size parameters
     prediction_dataloader = DataLoader(prediction_dataset)
     model = LightningModel.load_from_checkpoint(args.checkpoint)
@@ -25,13 +26,22 @@ def prediction(args):
 
     with torch.no_grad():
         for data in prediction_dataloader:
-            fn, seqs, mask = data['fn'], data['seqs'], data['mask']
+            fn, seqs, target, mask = data['fn'], data['seqs'], data['target'], data['mask']
             seqs = seqs.to(device)
             mask = mask.to(device)
-            # target = data['target'].to(device)
-            # target = target.to(device)
+            target = target.to(device)
+
             pred = model.infer(seqs)
-            pred = torch.where(mask < 0, mask, pred)
+            # print(F.mse_loss(pred, target, reduction='sum'))
+
+            pred *= 250
+            pred[pred < 1] = 0
+            # print(pred)
+            # pred = torch.where(mask < 0, mask, pred)
+            pred.masked_fill_(mask, -9999)
+            # print(pred)
+            # print(torch.sum(pred[pred > 0]))
+            # print(torch.sum(target[target > 0]))
 
             path = Path(args.output_dir + '/' + fn[0].replace('/', '_'))
             np.save(path, pred[0].cpu().numpy())
